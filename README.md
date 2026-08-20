@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Video Game Programming I
 
 Source code of the study cases developed throughout the *Video Game Programming I*
@@ -71,3 +72,9 @@ This project is licensed under the terms of the [MIT License](LICENSE).
 ## Author
 
 Alejandro Mujica — alejandro.j.mujic4@gmail.com
+=======
+# VideoGameProgramming-Labs-ULA
+Personal coursework, labs, and video game programming projects built in Python using Pygame and the Gale framework.
+
+Repository containing my practical implementations and exercises for Video Game Programming using Python, Pygame, and the Gale framework. Features custom game loops, event handling, virtual screen rendering, and object-oriented game logic.
+>>>>>>> aa3cc5ec15a3e50883d063d8b1b5cd40f2897548
