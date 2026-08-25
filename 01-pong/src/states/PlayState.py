@@ -65,13 +65,22 @@ class PlayState(BaseState):
             self._randomize_vy()
 
         # Logic for AI
-        if pong.player1.y - ball_rect.y <= 2 and pong.player1.y - ball_rect.y >= -2:
-            pong.player1.vy = 0
-        elif pong.player1.y <= ball_rect.y:
-            pong.player1.vy = settings.PADDLE_SPEED
-        else:
-            pong.player1.vy = -settings.PADDLE_SPEED
 
+        target_y = ball_rect.centery
+        paddle_center = pong.player1.y + pong.player1.height / 2
+        tolerance = 100
+
+        if pong.player2_score > pong.player1_score:
+            tolerance -= 90
+        elif pong.player2_score < pong.player1_score:
+            tolerance += 30
+
+        if paddle_center < target_y - tolerance:
+            pong.player1.vy = settings.PADDLE_SPEED
+        elif paddle_center > target_y + tolerance:
+            pong.player1.vy = -settings.PADDLE_SPEED
+        else:
+            pong.player1.vy = 0
 
     def _randomize_vy(self) -> None:
         magnitude = random.randint(10, 149)
