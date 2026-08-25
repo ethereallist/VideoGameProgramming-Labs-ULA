@@ -36,6 +36,8 @@ class PlayState(BaseState):
             + settings.PADDLE_GROW_UP_POINTS * (self.paddle.size + 1) * self.level
         )
         self.powerups = params.get("powerups", [])
+        self.sticky_ball_active = False
+        self.stuck_ball = None
 
         if not params.get("resume", False):
             self.balls[0].vx = random.randint(-80, 80)
@@ -48,15 +50,26 @@ class PlayState(BaseState):
         self.paddle.update(dt)
 
         for ball in self.balls:
-            ball.update(dt)
-            ball.solve_world_boundaries()
+            if ball is self.stuck_ball:
+                ball.x = self.paddle.x + self.paddle.width // 2 - ball.width // 2
+                ball.y = self.paddle.y - ball.height
+            else:
+                ball.update(dt)
+                ball.solve_world_boundaries()
 
             # Check collision with the paddle
             if ball.collides(self.paddle):
                 settings.SOUNDS["paddle_hit"].stop()
                 settings.SOUNDS["paddle_hit"].play()
-                ball.rebound(self.paddle)
-                ball.push(self.paddle)
+
+                if self.sticky_ball_active and ball.vy > 0:
+                    self.stuck_ball = ball
+                    self.sticky_ball_active = False
+                    ball.vx = 0
+                    ball.vy = 0
+                else:
+                    ball.rebound(self.paddle)
+                    ball.push(self.paddle)
 
             # Check collision with brickset
             if not ball.collides(self.brickset):
@@ -86,14 +99,19 @@ class PlayState(BaseState):
                 )
                 self.paddle.inc_size()
 
-            # Chance to generate two more balls
-            if random.random() < 0.1:
+            # Chance to generate two more balls or sticky ball powerup
+            if random.random() < 0.5:
                 r = brick.get_collision_rect()
                 self.powerups.append(
                     self.powerups_abstract_factory.get_factory("TwoMoreBall").create(
                         r.centerx - 8, r.centery - 8
                     )
                 )
+                self.powerups.append(
+                    self.powerups_abstract_factory.get_factory("StickyBall").create(
+                        r.centerx - 8, r.centery - 8
+                    )
+)
 
         # Removing all balls that are not in play
         self.balls = [ball for ball in self.balls if ball.active]
@@ -182,6 +200,13 @@ class PlayState(BaseState):
             powerup.render(surface)
 
     def on_input(self, input_id: str, input_data: InputData) -> None:
+        if input_id == "enter" and input_data.pressed:
+            if self.stuck_ball is not None:
+                self.stuck_ball.vx = random.randint(-80, 80)
+                self.stuck_ball.vy = random.randint(-170, -100)
+                self.stuck_ball = None
+            return
+
         if input_id == "move_left":
             if input_data.pressed:
                 self.paddle.vx = -settings.PADDLE_SPEED
