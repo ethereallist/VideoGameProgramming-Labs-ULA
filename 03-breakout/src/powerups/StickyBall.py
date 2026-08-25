@@ -28,3 +28,4 @@ class StickyBall(PowerUp):
     def take(self, play_state: TypeVar("PlayState")) -> None:
         play_state.sticky_ball_active = True
         self.active = False
+        play_state.sticky_timer = 10.0

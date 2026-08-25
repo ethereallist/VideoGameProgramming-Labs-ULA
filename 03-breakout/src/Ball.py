@@ -30,6 +30,8 @@ class Ball:
         self.texture = settings.TEXTURES["spritesheet"]
         self.frame = random.randint(0, 6)
         self.active = True
+        self.is_stuck = False
+        self.offset_x = 0
 
     def get_collision_rect(self) -> pygame.Rect:
         return pygame.Rect(self.x, self.y, self.width, self.height)
@@ -62,6 +64,8 @@ class Ball:
     def update(self, dt: float) -> None:
         self.x += self.vx * dt
         self.y += self.vy * dt
+        if self.is_stuck:
+            self.x += self.offset_x
 
     def render(self, surface):
         surface.blit(

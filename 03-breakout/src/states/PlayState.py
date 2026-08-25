@@ -9,6 +9,7 @@ This file contains the class to define the Play state.
 """
 
 import random
+from typing import Any
 
 import pygame
 
@@ -22,7 +23,7 @@ import src.powerups
 
 
 class PlayState(BaseState):
-    def enter(self, **params: dict):
+    def enter(self, *args: Any, **params: Any) -> None:
         self.level = params["level"]
         self.score = params["score"]
         self.lives = params["lives"]
@@ -31,6 +32,7 @@ class PlayState(BaseState):
         self.brickset = params["brickset"]
         self.live_factor = params["live_factor"]
         self.points_to_next_live = params["points_to_next_live"]
+        self.paddle.vx = 0
         self.points_to_next_grow_up = (
             self.score
             + settings.PADDLE_GROW_UP_POINTS * (self.paddle.size + 1) * self.level
@@ -38,6 +40,7 @@ class PlayState(BaseState):
         self.powerups = params.get("powerups", [])
         self.sticky_ball_active = False
         self.stuck_ball = None
+        self.sticky_timer = 0.0
 
         if not params.get("resume", False):
             self.balls[0].vx = random.randint(-80, 80)
@@ -50,8 +53,8 @@ class PlayState(BaseState):
         self.paddle.update(dt)
 
         for ball in self.balls:
-            if ball is self.stuck_ball:
-                ball.x = self.paddle.x + self.paddle.width // 2 - ball.width // 2
+            if getattr(ball, "is_stuck", False):
+                ball.x = self.paddle.x + ball.offset_x
                 ball.y = self.paddle.y - ball.height
             else:
                 ball.update(dt)
@@ -62,14 +65,19 @@ class PlayState(BaseState):
                 settings.SOUNDS["paddle_hit"].stop()
                 settings.SOUNDS["paddle_hit"].play()
 
-                if self.sticky_ball_active and ball.vy > 0:
-                    self.stuck_ball = ball
-                    self.sticky_ball_active = False
-                    ball.vx = 0
-                    ball.vy = 0
-                else:
-                    ball.rebound(self.paddle)
-                    ball.push(self.paddle)
+            if getattr(ball, "is_stuck", False):
+                continue
+            
+            has_stuck_ball = any(getattr(b, "is_stuck", False) for b in self.balls)
+
+            if self.sticky_ball_active and ball.vy > 0 and not has_stuck_ball:
+                ball.is_stuck = True
+                ball.offset_x = ball.x - self.paddle.x
+                ball.vx = 0
+                ball.vy = 0
+            else:
+                ball.rebound(self.paddle)
+                ball.push(self.paddle)
 
             # Check collision with brickset
             if not ball.collides(self.brickset):
@@ -107,6 +115,9 @@ class PlayState(BaseState):
                         r.centerx - 8, r.centery - 8
                     )
                 )
+
+            if random.random() < 0.3:
+                r = brick.get_collision_rect()
                 self.powerups.append(
                     self.powerups_abstract_factory.get_factory("StickyBall").create(
                         r.centerx - 8, r.centery - 8
@@ -160,6 +171,20 @@ class PlayState(BaseState):
                 live_factor=self.live_factor,
             )
 
+        # time for powerups
+
+        if self.sticky_ball_active:
+            self.sticky_timer -= dt
+            if self.sticky_timer <= 0:
+                self.sticky_ball_active = False
+                self.sticky_timer = 0.0
+                # Liberar pelotas atascadas cuando caduque el tiempo
+                for ball in self.balls:
+                    if getattr(ball, "is_stuck", False):
+                        ball.vx = random.randint(-80, 80)
+                        ball.vy = random.randint(-170, -100)
+                        ball.is_stuck = False
+
     def render(self, surface: pygame.Surface) -> None:
         heart_x = settings.VIRTUAL_WIDTH - 120
 
@@ -200,11 +225,12 @@ class PlayState(BaseState):
             powerup.render(surface)
 
     def on_input(self, input_id: str, input_data: InputData) -> None:
-        if input_id == "enter" and input_data.pressed:
-            if self.stuck_ball is not None:
-                self.stuck_ball.vx = random.randint(-80, 80)
-                self.stuck_ball.vy = random.randint(-170, -100)
-                self.stuck_ball = None
+        if input_id == "space" and input_data.pressed:
+            for ball in self.balls:
+                if getattr(ball, "is_stuck", False):
+                    ball.vx = random.randint(-80, 80)
+                    ball.vy = random.randint(-170, -100)
+                    ball.is_stuck = False
             return
 
         if input_id == "move_left":
