@@ -65,7 +65,10 @@ class Ball:
         self.x += self.vx * dt
         self.y += self.vy * dt
         if self.is_stuck:
-            self.x += self.offset_x
+            # La X debe ser la posición actual de la paleta + la distancia que guardaste al chocar
+            self.x = paddle.x + self.offset_x
+            # La Y se mantiene fija justo arriba de la paleta
+            self.y = paddle.y - self.height
 
     def render(self, surface):
         surface.blit(
@@ -128,5 +131,5 @@ class Ball:
 
         if d > 0 and paddle.vx < 0 and pr.x > 0:
             self.vx = -50 - 8 * d
-        elif d < 0 and paddle.vx > 0 and pr.right < settings.VIRTUAL_HEIGHT:
+        elif d < 0 and paddle.vx > 0 and pr.right < settings.VIRTUAL_WIDTH:
             self.vx = 50 - 8 * d

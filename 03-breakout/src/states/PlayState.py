@@ -61,23 +61,23 @@ class PlayState(BaseState):
                 ball.solve_world_boundaries()
 
             # Check collision with the paddle
+            if getattr(ball, "is_stuck", False):
+                continue
+
             if ball.collides(self.paddle):
                 settings.SOUNDS["paddle_hit"].stop()
                 settings.SOUNDS["paddle_hit"].play()
 
-            if getattr(ball, "is_stuck", False):
-                continue
-            
-            has_stuck_ball = any(getattr(b, "is_stuck", False) for b in self.balls)
+                has_stuck_ball = any(getattr(b, "is_stuck", False) for b in self.balls)
 
-            if self.sticky_ball_active and ball.vy > 0 and not has_stuck_ball:
-                ball.is_stuck = True
-                ball.offset_x = ball.x - self.paddle.x
-                ball.vx = 0
-                ball.vy = 0
-            else:
-                ball.rebound(self.paddle)
-                ball.push(self.paddle)
+                if self.sticky_ball_active and not has_stuck_ball:
+                    ball.is_stuck = True
+                    ball.offset_x = ball.x - self.paddle.x
+                    ball.vx = 0
+                    ball.vy = 0
+                else:
+                    ball.rebound(self.paddle)
+                    ball.push(self.paddle)
 
             # Check collision with brickset
             if not ball.collides(self.brickset):
