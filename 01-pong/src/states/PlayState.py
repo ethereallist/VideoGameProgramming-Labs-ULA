@@ -22,6 +22,8 @@ from src.rendering import render_table
 class PlayState(BaseState):
     def enter(self, pong) -> None:
         self.pong = pong
+        self.ai_timer = 0.0
+        self.tolerance = 0
 
     def update(self, dt: float) -> None:
         pong = self.pong
@@ -66,18 +68,18 @@ class PlayState(BaseState):
 
         # Logic for AI
 
+        self.ai_timer += dt
         target_y = ball_rect.centery
         paddle_center = pong.player1.y + pong.player1.height / 2
-        tolerance = 100
 
-        if pong.player2_score > pong.player1_score:
-            tolerance -= 90
-        elif pong.player2_score < pong.player1_score:
-            tolerance += 30
+        if self.ai_timer <= 2:
+            self.tolerance = random.randint(0, 100)
+            self.ai_timer = 0.0
 
-        if paddle_center < target_y - tolerance:
+        if paddle_center < target_y - self.tolerance:
             pong.player1.vy = settings.PADDLE_SPEED
-        elif paddle_center > target_y + tolerance:
+
+        elif paddle_center > target_y + self.tolerance:
             pong.player1.vy = -settings.PADDLE_SPEED
         else:
             pong.player1.vy = 0

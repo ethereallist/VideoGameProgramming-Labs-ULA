@@ -21,6 +21,8 @@ class Bird:
         self.height: float = height
         self.vy: float = 0.0
         self.jumping: bool = False
+        self.ghost_mode: bool = False
+        self.ghost_mode_timer: float = 0.0
 
     def get_rect(self) -> pygame.Rect:
         return pygame.Rect(round(self.x), round(self.y), self.width, self.height)

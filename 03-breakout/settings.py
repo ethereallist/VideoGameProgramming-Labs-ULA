@@ -32,6 +32,7 @@ input_handler.InputHandler.set_keyboard_action(input_handler.KEY_DOWN, "move_dow
 input_handler.InputHandler.set_keyboard_action(input_handler.KEY_LEFT, "move_left")
 input_handler.InputHandler.set_keyboard_action(input_handler.KEY_SPACE, "pause")
 input_handler.InputHandler.set_keyboard_action(input_handler.KEY_SPACE, "space")
+input_handler.InputHandler.set_keyboard_action(input_handler.KEY_f, "f")
 
 
 TITLE = "Breakout"
@@ -84,6 +85,14 @@ TEXTURES = {
     "spritesheet": pygame.image.load(BASE_DIR / "assets" / "graphics" / "breakout.png"),
     "hearts": pygame.image.load(BASE_DIR / "assets" / "graphics" / "hearts.png"),
     "arrows": pygame.image.load(BASE_DIR / "assets" / "graphics" / "arrows.png"),
+    "rocket": pygame.transform.scale(
+        pygame.image.load(BASE_DIR / "assets" / "graphics" / "rocket.png"),
+        (16, 16)
+    ),
+    "rocket_icon": pygame.transform.scale(
+        pygame.image.load(BASE_DIR / "assets" / "graphics" / "rocket_icon.png"),
+        (16, 16)
+    ),
 }
 
 FRAMES = {

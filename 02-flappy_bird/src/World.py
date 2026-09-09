@@ -18,6 +18,8 @@ from gale.factory import Factory
 
 import settings
 from src.LogPair import LogPair
+from src.powerup.PowerUp import PowerUp
+from src.powerup.GhostPowerUp import GhostPowerUp
 
 
 class World:
@@ -26,9 +28,12 @@ class World:
         self.background_x: float = 0.0
         self.ground_x: float = 0.0
         self.logs: List[LogPair] = []
+        self.powerups: List[PowerUp] = []
         self.logs_spawn_timer: float = 0.0
         self.last_log_y: float = -settings.LOG_HEIGHT + random.randint(0, 80) + 20
         self.log_pair_factory: Factory = Factory(LogPair)
+        self.powerup_factory: Factory = Factory(GhostPowerUp)
+        self.time_to_spawn_logs_hard: float = random.uniform(0.8, 2.5)
 
     def reset(self, generate_logs: bool) -> None:
         self.generate_logs = generate_logs
@@ -43,20 +48,6 @@ class World:
         return any(log_pair.update_scored(rect) for log_pair in self.logs)
 
     def update(self, dt: float) -> None:
-        if self.generate_logs:
-            self.logs_spawn_timer += dt
-
-            if self.logs_spawn_timer >= settings.TIME_TO_SPAWN_LOGS:
-                self.logs_spawn_timer = 0.0
-                y = max(
-                    -settings.LOG_HEIGHT + 10,
-                    min(
-                        self.last_log_y + random.randint(-20, 20),
-                        settings.VIRTUAL_HEIGHT + 90 - settings.LOG_HEIGHT,
-                    ),
-                )
-                self.last_log_y = y
-                self.logs.append(self.log_pair_factory.create(settings.VIRTUAL_WIDTH, y))
 
         self.background_x += -settings.BACK_SCROLL_SPEED * dt
 
@@ -73,6 +64,11 @@ class World:
 
         self.logs = [log_pair for log_pair in self.logs if not log_pair.is_out_of_game()]
 
+        for power_up in self.powerups:
+            power_up.update(dt)
+
+        self.powerups = [power_up for power_up in self.powerups if power_up.active]
+
     def render(self, surface: pygame.Surface) -> None:
         surface.blit(settings.TEXTURES["background"], (round(self.background_x), 0))
 
@@ -83,3 +79,6 @@ class World:
             settings.TEXTURES["ground"],
             (round(self.ground_x), settings.VIRTUAL_HEIGHT - settings.GROUND_HEIGHT),
         )
+
+        for power_up in self.powerups:
+            power_up.render(surface)

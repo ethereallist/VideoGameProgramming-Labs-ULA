@@ -17,8 +17,12 @@ import pygame
 from gale import input_handler
 
 input_handler.InputHandler.set_keyboard_action(input_handler.KEY_ESCAPE, "quit")
+input_handler.InputHandler.set_keyboard_action(input_handler.KEY_h, "hard_mode")
+input_handler.InputHandler.set_keyboard_action(input_handler.KEY_RIGHT, "right_arrow")
+input_handler.InputHandler.set_keyboard_action(input_handler.KEY_LEFT, "left_arrow")
 input_handler.InputHandler.set_keyboard_action(input_handler.KEY_RETURN, "confirm")
 input_handler.InputHandler.set_mouse_click_action(input_handler.MOUSE_BUTTON_1, "jump")
+input_handler.InputHandler.set_keyboard_action(input_handler.KEY_SPACE, "space")
 
 TITLE = "Flappy Bird"
 
@@ -48,6 +52,7 @@ GRAVITY = 980
 JUMP_TAKEOFF_SPEED = GRAVITY / 6
 
 TIME_TO_SPAWN_LOGS = 1.5
+TIME_TO_SPAWN_LOGS_HARD = 1.0
 
 MEDIUM_TEXT_SIZE = 18
 HUGE_TEXT_SIZE = 56
@@ -60,6 +65,8 @@ TEXTURES = {
     "background": pygame.image.load(BASE_DIR / "assets" / "graphics" / "background.png"),
     "ground": pygame.image.load(BASE_DIR / "assets" / "graphics" / "ground.png"),
     "log": pygame.image.load(BASE_DIR / "assets" / "graphics" / "log.png"),
+    "powerup": pygame.image.load(BASE_DIR / "assets" / "graphics" / "powerup_bucciarati.png"),
+    "giorno_bucciarati": pygame.image.load(BASE_DIR / "assets" / "graphics" / "giorno_bucciarati.jpg")
 }
 # The top log of every pair is the same image, flipped upside down.
 TEXTURES["log_inverted"] = pygame.transform.flip(TEXTURES["log"], False, True)
@@ -68,7 +75,9 @@ SOUNDS = {
     "jump": pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "jump.wav"),
     "explosion": pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "explosion.wav"),
     "hurt": pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "hurt.wav"),
+    "ouch": pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "ouch.wav"),
     "score": pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "score.wav"),
+    "music": pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "fighting_gold.mp3"),
 }
 
 pygame.mixer.music.load(BASE_DIR / "assets" / "sounds" / "marios_way.ogg")

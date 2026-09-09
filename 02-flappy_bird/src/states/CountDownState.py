@@ -18,10 +18,11 @@ from src.World import World
 
 
 class CountDownState(BaseState):
-    def enter(self) -> None:
+    def enter(self, hard_mode: bool = False) -> None:
         self.world = World(generate_logs=False)
         self.counter = 3
         self.timer = 0.0
+        self.hard_mode = hard_mode
 
     def update(self, dt: float) -> None:
         self.timer += dt
@@ -31,7 +32,7 @@ class CountDownState(BaseState):
             self.counter -= 1
 
             if self.counter == 0:
-                self.state_machine.change("playing", world=self.world)
+                self.state_machine.change("playing", world=self.world, hard_mode=self.hard_mode)
                 return
 
         self.world.update(dt)

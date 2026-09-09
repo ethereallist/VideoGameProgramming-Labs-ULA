@@ -5,7 +5,7 @@ Study Case: Flappy Bird
 Author: Alejandro Mujica
 alejandro.j.mujic4@gmail.com
 
-This file contains the definition of the class TitleScreenState.
+This file contains the definition of the class PauseState.
 """
 
 import pygame
@@ -18,9 +18,10 @@ import settings
 from src.World import World
 
 
-class TitleScreenState(BaseState):
+class PauseState(BaseState):
     def enter(self) -> None:
         self.world = World()
+        pygame.mixer.music.stop()
 
     def update(self, dt: float) -> None:
         self.world.update(dt)
@@ -29,7 +30,7 @@ class TitleScreenState(BaseState):
         self.world.render(surface)
         render_text(
             surface,
-            "Flappy Bird",
+            "PAUSE",
             settings.FONTS["flappy"],
             settings.VIRTUAL_WIDTH / 2,
             settings.VIRTUAL_HEIGHT / 3,
@@ -39,17 +40,7 @@ class TitleScreenState(BaseState):
         )
         render_text(
             surface,
-            "Press Enter to start easy mode",
-            settings.FONTS["medium"],
-            settings.VIRTUAL_WIDTH / 2,
-            2 * settings.VIRTUAL_HEIGHT / 4,
-            settings.COLOR_WHITE,
-            center=True,
-            shadowed=True,
-        )
-        render_text(
-            surface,
-            "Press H to start hard mode",
+            "Press Space to resume",
             settings.FONTS["medium"],
             settings.VIRTUAL_WIDTH / 2,
             2 * settings.VIRTUAL_HEIGHT / 3,
@@ -59,7 +50,8 @@ class TitleScreenState(BaseState):
         )
 
     def on_input(self, input_id: str, input_data: InputData) -> None:
-        if input_id == "confirm" and input_data.pressed:
-            self.state_machine.change("count_down")
-        if input_id == "hard_mode" and input_data.pressed:
-            self.state_machine.change("count_down", hard_mode=True)
+        if input_id == "space" and input_data.pressed:
+            self.state_machine.change("playing", world=self.world)
+
+    def on_exit(self) -> None:
+        pygame.mixer.music.play(loops=-1)

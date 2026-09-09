@@ -17,6 +17,7 @@ from gale.factory import AbstractFactory
 from gale.state import BaseState
 from gale.input_handler import InputData
 from gale.text import render_text
+from src.Rockets import Rockets
 
 import settings
 import src.powerups
@@ -41,6 +42,10 @@ class PlayState(BaseState):
         self.sticky_ball_active = False
         self.stuck_ball = None
         self.sticky_timer = 0.0
+        self.more_healt_active = False
+        self.rocket_active = False
+        self.projectiles = []
+        self.cannons_active = False
 
         if not params.get("resume", False):
             self.balls[0].vx = random.randint(-80, 80)
@@ -107,7 +112,7 @@ class PlayState(BaseState):
                 )
                 self.paddle.inc_size()
 
-            # Chance to generate two more balls or sticky ball powerup
+            # Chance to generate two more balls or sticky ball powerup or rocket powerup
             if random.random() < 0.5:
                 r = brick.get_collision_rect()
                 self.powerups.append(
@@ -116,10 +121,26 @@ class PlayState(BaseState):
                     )
                 )
 
-            if random.random() < 0.3:
+            elif random.random() < 0.3:
                 r = brick.get_collision_rect()
                 self.powerups.append(
                     self.powerups_abstract_factory.get_factory("StickyBall").create(
+                        r.centerx - 8, r.centery - 8
+                    )
+                )
+
+            elif random.random() < 0.4:
+                r = brick.get_collision_rect()
+                self.powerups.append(
+                    self.powerups_abstract_factory.get_factory("RocketsPower").create(
+                        r.centerx - 8, r.centery - 8
+                    )
+                )
+
+            elif random.random() < 0.2:
+                r = brick.get_collision_rect()
+                self.powerups.append(
+                    self.powerups_abstract_factory.get_factory("MoreHealth").create(
                         r.centerx - 8, r.centery - 8
                     )
 )
@@ -153,6 +174,7 @@ class PlayState(BaseState):
             if powerup.collides(self.paddle):
                 powerup.take(self)
 
+
         # Remove powerups that are not in play
         self.powerups = [p for p in self.powerups if p.active]
 
@@ -184,6 +206,21 @@ class PlayState(BaseState):
                         ball.vx = random.randint(-80, 80)
                         ball.vy = random.randint(-170, -100)
                         ball.is_stuck = False
+
+        # Update rockets
+
+        for projectile in self.projectiles:
+            projectile.update(dt)
+            for _, brick in self.brickset.bricks.items():
+                if not brick.broken and projectile.get_collision_rect().colliderect(brick.get_collision_rect()):
+                    brick.hit()
+                    self.score += brick.score()
+                    projectile.active = False
+                    break
+
+        # Remove projectiles that are not in play
+
+        self.projectiles = [p for p in self.projectiles if p.active]
 
     def render(self, surface: pygame.Surface) -> None:
         heart_x = settings.VIRTUAL_WIDTH - 120
@@ -218,11 +255,34 @@ class PlayState(BaseState):
 
         self.paddle.render(surface)
 
+        self.paddle.render(surface)
+
+        if self.cannons_active:
+            cannon_width = 8
+            cannon_height = 8
+            left_cannon_rect = pygame.Rect(
+                round(self.paddle.x) - cannon_width // 2 - 5,
+                round(self.paddle.y),
+                cannon_width,
+                cannon_height,
+            )
+            right_cannon_rect = pygame.Rect(
+                round(self.paddle.x + self.paddle.width) - cannon_width // 2 - 5,
+                round(self.paddle.y),
+                cannon_width,
+                cannon_height,
+            )
+            surface.blit(settings.TEXTURES["rocket"], left_cannon_rect)
+            surface.blit(settings.TEXTURES["rocket"], right_cannon_rect)
+
         for ball in self.balls:
             ball.render(surface)
 
         for powerup in self.powerups:
             powerup.render(surface)
+
+        for projectile in self.projectiles:
+            projectile.render(surface)
 
     def on_input(self, input_id: str, input_data: InputData) -> None:
         if input_id == "space" and input_data.pressed:
@@ -256,3 +316,6 @@ class PlayState(BaseState):
                 live_factor=self.live_factor,
                 powerups=self.powerups,
             )
+        if input_id == "f" and self.cannons_active and not self.projectiles:
+            self.projectiles.append(Rockets(self.paddle.x, self.paddle.y))
+            self.projectiles.append(Rockets(self.paddle.x + self.paddle.width - 4, self.paddle.y))
