@@ -112,38 +112,18 @@ class PlayState(BaseState):
                 )
                 self.paddle.inc_size()
 
-            # Chance to generate two more balls or sticky ball powerup or rocket powerup
-            if random.random() < 0.5:
+            # Chance to generate a random power-up
+            if random.random() < settings.POWERUP_DROP_CHANCE:
+                powerup_name = random.choices(
+                    list(settings.POWERUP_WEIGHTS.keys()),
+                    weights=list(settings.POWERUP_WEIGHTS.values()),
+                )[0]
                 r = brick.get_collision_rect()
                 self.powerups.append(
-                    self.powerups_abstract_factory.get_factory("TwoMoreBall").create(
+                    self.powerups_abstract_factory.get_factory(powerup_name).create(
                         r.centerx - 8, r.centery - 8
                     )
                 )
-
-            elif random.random() < 0.3:
-                r = brick.get_collision_rect()
-                self.powerups.append(
-                    self.powerups_abstract_factory.get_factory("StickyBall").create(
-                        r.centerx - 8, r.centery - 8
-                    )
-                )
-
-            elif random.random() < 0.4:
-                r = brick.get_collision_rect()
-                self.powerups.append(
-                    self.powerups_abstract_factory.get_factory("RocketsPower").create(
-                        r.centerx - 8, r.centery - 8
-                    )
-                )
-
-            elif random.random() < 0.2:
-                r = brick.get_collision_rect()
-                self.powerups.append(
-                    self.powerups_abstract_factory.get_factory("MoreHealth").create(
-                        r.centerx - 8, r.centery - 8
-                    )
-)
 
         # Removing all balls that are not in play
         self.balls = [ball for ball in self.balls if ball.active]

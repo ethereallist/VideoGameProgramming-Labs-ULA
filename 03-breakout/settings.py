@@ -110,3 +110,15 @@ FONTS = {
     "medium": pygame.font.Font(BASE_DIR / "assets" / "fonts" / "font.ttf", 12),
     "large": pygame.font.Font(BASE_DIR / "assets" / "fonts" / "font.ttf", 24),
 }
+
+# Probabilidad de que un ladrillo roto largue un power-up (0.0 a 1.0)
+POWERUP_DROP_CHANCE = 0.5
+
+# Peso relativo de cada power-up cuando cae uno (no hace falta que sumen 1,
+# random.choices los normaliza solo)
+POWERUP_WEIGHTS = {
+    "TwoMoreBall": 0.35,
+    "StickyBall": 0.25,
+    "RocketsPower": 0.25,
+    "MoreHealth": 0.15,
+}

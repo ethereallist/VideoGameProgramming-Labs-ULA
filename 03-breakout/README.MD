@@ -1,5 +1,3 @@
-
-Readme · MD
 # Breakout — Power-ups
 
 ## Power-up adicional: MoreHealth (Corazón de vida extra)
@@ -12,9 +10,30 @@ ladrillo destruido, igual que el resto de los power-ups del juego.
 
 ### Comportamiento
 
-- **Probabilidad de aparición:** al destruir un ladrillo, existe un **20%**
-  (`0.2`) de probabilidad de que `MoreHealth` sea generado en la posición
-  del ladrillo.
+- **Sistema de probabilidad:** el drop de power-ups usa un sistema de dos
+  pasos, centralizado en `settings.py`:
+  1. Al destruir un ladrillo, se tira una única probabilidad
+     `settings.POWERUP_DROP_CHANCE` (actualmente **`0.5`**, 50%) de que
+     **algún** power-up caiga en la posición del ladrillo.
+  2. Si cae uno, se elige **cuál** de los 4 tipos mediante un sorteo
+     ponderado (`random.choices`) usando los pesos relativos definidos en
+     `settings.POWERUP_WEIGHTS`:
+
+     | Power-up      | Peso |
+     |---------------|------|
+     | TwoMoreBall   | 0.35 |
+     | StickyBall    | 0.25 |
+     | RocketsPower  | 0.25 |
+     | MoreHealth    | 0.15 |
+
+  Con estos valores, la probabilidad de que un ladrillo roto específicamente
+  largue `MoreHealth` es `0.5 × 0.15 = 0.075` (**7.5%** de los ladrillos).
+  Antes cada power-up tiraba su propia probabilidad de forma independiente
+  (lo que en la práctica hacía que cayera algún power-up en ~83% de los
+  ladrillos); ahora es un único roll + una elección ponderada, así que las
+  probabilidades son predecibles y fáciles de ajustar desde `settings.py`
+  sin tocar la lógica de `PlayState`.
+
 - **Condición de efecto:** al ser recogido por la paleta, el power-up
   revisa cuántas vidas tiene el jugador en ese momento:
   - Si el jugador tiene **menos de 3 vidas**, se le suma **una vida**
@@ -25,6 +44,7 @@ ladrillo destruido, igual que el resto de los power-ups del juego.
 - En ambos casos, el power-up desaparece de la escena al ser recogido
   (`self.active = False`), sin importar si otorgó una vida o no.
 - Al recogerlo, se reproduce un efecto de sonido (`settings.SOUNDS["life"]`).
+
 ### Implementación
 
 `MoreHealth` hereda de la clase base `PowerUp` (`src/powerups/PowerUp.py`),
@@ -42,18 +62,3 @@ class MoreHealth(PowerUp):
             play_state.lives += 1
         self.active = False
         settings.SOUNDS["life"].play()
-```
-
-Se genera de la misma forma que los demás power-ups, a través del
-`AbstractFactory` de `src.powerups`, en `PlayState.update`, dentro del
-bloque de colisión pelota-ladrillo:
-
-```python
-if random.random() < 0.2:
-    r = brick.get_collision_rect()
-    self.powerups.append(
-        self.powerups_abstract_factory.get_factory("MoreHealth").create(
-            r.centerx - 8, r.centery - 8
-        )
-    )
-```
