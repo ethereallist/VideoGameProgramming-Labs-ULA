@@ -112,6 +112,7 @@ class PlayState(BaseState):
         self.pressed_position = pygame.Vector2()
         self.pressed_camera_target = pygame.Vector2()
         self.aim_offset = pygame.Vector2()
+        self.is_split = False
 
     def fixed_update(self) -> None:
         # Driven by gale.game.Game's own accumulator (added in gale
@@ -139,6 +140,9 @@ class PlayState(BaseState):
         self._update_zoom(dt)
         self.camera.update(dt)
 
+        # update bird.is_hit
+        self.bird.check_hit()
+
     def _hold_bird_at_rest(self) -> None:
         self.bird.reset()
 
@@ -160,17 +164,36 @@ class PlayState(BaseState):
         linear_speed = self.bird.body.velocity.length()
         angular_speed = abs(self.bird.body.angular_velocity)
 
-        if (
-            linear_speed < IDLE_LINEAR_SPEED_THRESHOLD
-            and angular_speed < IDLE_ANGULAR_SPEED_THRESHOLD
-        ):
+        active_birds = [self.bird]
+        if hasattr(self.bird, "bird1"):
+            active_birds.append(self.bird.bird1)
+        if hasattr(self.bird, "bird2"):
+            active_birds.append(self.bird.bird2)
+
+        all_settled = all(
+            bird.body.velocity.length() < IDLE_LINEAR_SPEED_THRESHOLD
+            and abs(bird.body.angular_velocity) < IDLE_ANGULAR_SPEED_THRESHOLD
+            for bird in active_birds
+        )
+        if all_settled:
             self.idle_frames += 1
 
             if self.idle_frames > IDLE_FRAMES_LIMIT:
                 self.flinging = False
                 self.idle_frames = 0
                 self.bird.reset()
+                self.bird.is_hit = False
+                self.is_split = False
+
+                if hasattr(self.bird, "bird1"):
+                    self.world.destroy_body(self.bird.bird1.body)
+                    del self.bird.bird1
+                if hasattr(self.bird, "bird2"):
+                    self.world.destroy_body(self.bird.bird2.body)
+                    del self.bird.bird2
+
                 self.camera_target.update(self.bird.position)
+
         else:
             self.idle_frames = 0
 
@@ -188,6 +211,11 @@ class PlayState(BaseState):
         surface.fill(settings.BG_COLOR)
         self.level.render(surface, self.camera)
         self.bird.render(surface, self.camera)
+        if hasattr(self.bird, "bird1"):
+            self.bird.bird1.render(surface, self.camera)
+
+        if hasattr(self.bird, "bird2"):
+            self.bird.bird2.render(surface, self.camera)
 
         if self.aiming:
             self._render_pull_line(surface)
@@ -204,6 +232,10 @@ class PlayState(BaseState):
             self._on_touch(input_data)
         elif input_id == "touch_motion":
             self._on_touch_motion(input_data)
+        elif input_id == "space" and input_data.pressed:
+            if self.flinging and not self.bird.is_hit and not self.is_split:
+                self.is_split = True
+                self.bird.split(self.world)
 
     def _mouse_to_virtual(self, position) -> pygame.Vector2:
         scale_x = settings.VIRTUAL_WIDTH / settings.WINDOW_WIDTH
@@ -264,3 +296,4 @@ class PlayState(BaseState):
                 left - CAMERA_PAN_MARGIN, min(right + CAMERA_PAN_MARGIN, target.x)
             )
             self.camera_target.update(target)
+

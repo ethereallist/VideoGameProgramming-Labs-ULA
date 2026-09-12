@@ -73,7 +73,7 @@ class PlayState(BaseState):
         paddle_center = pong.player1.y + pong.player1.height / 2
 
         if self.ai_timer <= 2:
-            self.tolerance = random.randint(0, 100)
+            self.tolerance = random.randint(0, 60)
             self.ai_timer = 0.0
 
         if paddle_center < target_y - self.tolerance:

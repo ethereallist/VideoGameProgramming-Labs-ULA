@@ -17,7 +17,7 @@ import math
 
 import pygame
 
-from gale.physics.shapes import CircleShape
+from gale.physics.shapes import CircleShape, BoxShape
 from gale.physics.world import World
 
 import settings
@@ -25,9 +25,9 @@ from src.definitions.entity import BIRD, density_for_circle
 
 
 class Bird:
-    def __init__(self, world: World, x: float, y: float) -> None:
+    def __init__(self, world: World, x: float, y: float, mass: float = None) -> None:
         self.radius: float = BIRD["radius"]
-        self.mass: float = BIRD["mass"]
+        self.mass: float = BIRD["mass"] if mass is None else mass
 
         density = density_for_circle(self.mass, self.radius)
         self.body = world.create_dynamic_body(
@@ -45,6 +45,7 @@ class Bird:
 
         self.initial_position = pygame.Vector2(x, y)
         self.image = settings.TEXTURES[BIRD["sprite"]]
+        self.is_hit = False
 
     @property
     def position(self) -> pygame.Vector2:
@@ -59,6 +60,7 @@ class Bird:
         self.body.angle = 0.0
         self.body.velocity = (0, 0)
         self.body.angular_velocity = 0.0
+        self.is_hit = False
 
     def render(self, surface: pygame.Surface, camera) -> None:
         diameter = max(1, round(self.radius * 2 * camera.zoom))
@@ -66,3 +68,33 @@ class Bird:
         rotated = pygame.transform.rotate(scaled, -math.degrees(self.body.angle))
         rect = rotated.get_rect(center=camera.world_to_screen(self.body.position))
         surface.blit(rotated, rect)
+
+    def check_hit(self) -> None:
+        if self.is_hit:
+            return
+
+        for other in self.body.touching_bodies:
+            if other.user_data != "wind":
+                self.is_hit = True
+
+    def split(self, world: World) -> None:
+        """
+        Split the bird into two smaller birds, each with half the mass of
+        the original. The new birds are created at the same position as
+        the original, and given a small impulse to separate them.
+        """
+        if self.is_hit:
+            return
+
+        velocity = pygame.Vector2(self.body.velocity)
+
+        self.bird1 = Bird(world, self.body.position.x, self.body.position.y, self.mass)
+        self.bird2 = Bird(world, self.body.position.x, self.body.position.y, self.mass)
+
+        deviation = math.radians(25)
+
+        # esta está desviándose hacia arriba
+        self.bird1.body.velocity = velocity.rotate(-math.degrees(deviation))
+
+        # esta está desviándose hacia abajo
+        self.bird2.body.velocity = velocity.rotate(math.degrees(deviation))
