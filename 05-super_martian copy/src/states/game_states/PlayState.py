@@ -52,6 +52,7 @@ class PlayState(BaseState):
             pygame.mixer.music.play(loops=-1)
 
         self.tilemap = self.game_level.tilemap
+        print("KEY BLOCK:", self.game_level.key_block)
         # Resting exactly on the ground tile's surface rather than a few
         # pixels into it, so gale.tilemap's one-way platform collision
         # (which requires the entity to already be at/above the surface)
@@ -132,7 +133,7 @@ class PlayState(BaseState):
         next_level = self.level + 1
 
         if next_level > settings.NUM_LEVELS:
-            self.state_machine.change("game_over", self.player, victory=True)
+            self.state_machine.change("game_over", self.player)
         else:
             self.state_machine.change("play", level=next_level, player=self.player)
 
@@ -141,7 +142,7 @@ class PlayState(BaseState):
             pygame.mixer.music.stop()
             pygame.mixer.music.unload()
             Timer.clear()
-            self.state_machine.change("game_over", self.player, level=self.level)
+            self.state_machine.change("game_over", self.player)
 
         self.player.update(dt)
 

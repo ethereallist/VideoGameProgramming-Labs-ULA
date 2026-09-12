@@ -119,12 +119,6 @@
               "value": "platform"
             }
           ]
-        },
-        {
-          "id": 50,
-          "properties": [
-          { "name": "collision", "type": "string", "value": "solid" }
-          ]
         }
       ]
     }
@@ -2348,14 +2342,14 @@
         "id": 100,
         "name": "",
         "type": "key_block",
-        "x": 144,
-        "y": 32,
+        "x": 16,
+        "y": 96,
         "width": 16,
         "height": 16,
         "properties": [
-          { "name": "tile_index", "type": "int", "value": 50 },
+          { "name": "tile_index", "type": "int", "value": 41 },
           { "name": "target_score", "type": "int", "value": 100 }
-          ]
+        ]
       }
     ]
   }

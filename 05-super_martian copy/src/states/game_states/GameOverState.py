@@ -18,21 +18,19 @@ import settings
 
 
 class GameOverState(BaseState):
-    def enter(self, player, level: int = 1, victory: bool = False) -> None:
+    def enter(self, player) -> None:
         self.player = player
-        self.level = level
-        self.victory = victory
 
     def on_input(self, input_id: str, input_data: InputData) -> None:
         if input_id == "enter" and input_data.pressed:
-            self.state_machine.change("play", level=self.level)
+            self.state_machine.change("play")
 
     def render(self, surface: pygame.Surface) -> None:
         surface.fill((25, 130, 196))
 
         render_text(
             surface,
-            "You Win!" if self.victory else "Game Over!",
+            "Game Over!",
             settings.FONTS["medium"],
             settings.VIRTUAL_WIDTH // 2,
             20,
