@@ -22,16 +22,16 @@ from src.World import World
 from src.strategies import NormalCollision, NormalMovement, NormalObstacle, HardObstacle, HardMovement, HardCollision
 
 class PlayingState(BaseState):
-    def enter(self, world: Optional[World] = None, hard_mode: bool = False) -> None:
+    def enter(self, world: Optional[World] = None, bird: Optional[Bird] = None, hard_mode: bool = False, score: int = 0) -> None:
         self.world = world if world is not None else World()
         self.world.reset(True)
-        self.bird = Bird(
+        self.bird = bird if bird is not None else Bird(
             settings.VIRTUAL_WIDTH / 2 - settings.BIRD_WIDTH / 2,
             settings.VIRTUAL_HEIGHT / 2 - settings.BIRD_HEIGHT / 2,
             settings.BIRD_WIDTH,
             settings.BIRD_HEIGHT,
         )
-        self.score = 0
+        self.score = score
         self.hard_mode = hard_mode
 
         if self.hard_mode:
@@ -90,7 +90,13 @@ class PlayingState(BaseState):
             self.movement_strategy.direction(input_id, self.bird)
 
         if input_id == "space" and input_data.pressed:
-            self.state_machine.change("pause")
+            self.state_machine.change(
+                "pause",
+                world=self.world,
+                bird=self.bird,
+                score=self.score,
+                hard_mode=self.hard_mode,
+            )
 
         if input_id == "right_arrow" and input_data.pressed:
             self.movement_strategy.direction(input_id, self.bird)

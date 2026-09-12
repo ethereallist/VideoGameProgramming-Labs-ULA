@@ -19,12 +19,22 @@ from src.World import World
 
 
 class PauseState(BaseState):
-    def enter(self) -> None:
-        self.world = World()
+    def enter(
+        self,
+        world: World,
+        bird,
+        score: int = 0,
+        hard_mode: bool = False,
+        ) -> None:
+
+        self.world = world
+        self.bird = bird
+        self.score = score
+        self.hard_mode = hard_mode
         pygame.mixer.music.stop()
 
     def update(self, dt: float) -> None:
-        self.world.update(dt)
+        pass
 
     def render(self, surface: pygame.Surface) -> None:
         self.world.render(surface)
@@ -51,7 +61,13 @@ class PauseState(BaseState):
 
     def on_input(self, input_id: str, input_data: InputData) -> None:
         if input_id == "space" and input_data.pressed:
-            self.state_machine.change("playing", world=self.world)
+            self.state_machine.change(
+                "playing",
+                world=self.world,
+                bird=self.bird,
+                score=self.score,
+                hard_mode=self.hard_mode,
+            )
 
-    def on_exit(self) -> None:
+    def exit(self) -> None:
         pygame.mixer.music.play(loops=-1)
