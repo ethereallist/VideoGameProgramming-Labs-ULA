@@ -14,6 +14,7 @@ from typing import Any, Callable, List, Optional, TypeVar
 import pygame
 
 import settings
+from src.Chest import Chest
 from src.definitions.entity import ENTITY_DEFS
 from src.definitions.game_objects import GAME_OBJECT_DEFS
 from src.Entity import Entity
@@ -68,11 +69,17 @@ def _doorway_opening_for(
     """
     :returns: The precise opening rect of whichever doorway rect is
         close to (i.e. overlapping the wider detection zone of), or
-        None if rect isn't near any doorway right now.
+        None if rect isn't near any doorway right now. A room like
+        BossRoom that doesn't have all four directions in
+        doorways_by_direction simply has nothing to clip against on the
+        missing ones.
     """
     for direction, zone in _DOORWAY_ZONES.items():
         if zone.colliderect(rect):
-            return doorways_by_direction[direction].get_collision_rect()
+            doorway = doorways_by_direction.get(direction)
+
+            if doorway is not None:
+                return doorway.get_collision_rect()
 
     return None
 
@@ -82,10 +89,15 @@ class Room:
         self,
         player: TypeVar("Player"),
         on_game_over: Callable[[], None],
+        spawn_chest: bool = False,
     ) -> None:
         # Reference to player for collisions, etc.
         self.player = player
         self.on_game_over = on_game_over
+
+        # Whether this room should generate the (only ever spawned once)
+        # chest; set by Dungeon._create_room. Read by _generate_objects.
+        self.spawn_chest = spawn_chest
 
         self.width = settings.MAP_WIDTH
         self.height = settings.MAP_HEIGHT
@@ -96,16 +108,12 @@ class Room:
         self.entities: List[Entity] = []
         self._generate_entities()
 
+        self.chest: Optional[Chest] = None
         self.objects: List[GameObject] = []
         self._generate_objects()
 
         # Doorways that lead to other dungeon rooms.
-        self.doorways = [
-            Doorway("top", False, self),
-            Doorway("bottom", False, self),
-            Doorway("left", False, self),
-            Doorway("right", False, self),
-        ]
+        self.doorways = self._generate_doorways()
         self._doorways_by_direction = {
             doorway.direction: doorway for doorway in self.doorways
         }
@@ -175,14 +183,31 @@ class Room:
         for projectile in list(self.projectiles):
             projectile.update(dt)
 
-            for entity in self.entities:
-                if projectile.dead:
-                    break
+            # A Fireball hurts only the player; an arrow (the default)
+            # hurts only room entities -- never both.
+            if (
+                not projectile.dead
+                and getattr(projectile, "damages_player", False)
+                and not self.player.invulnerable
+                and projectile.collides(self.player)
+            ):
+                settings.SOUNDS["hit-player"].play()
+                self.player.damage(1)
+                self.player.go_invulnerable(1.5)
+                projectile.dead = True
 
-                if not entity.dead and projectile.collides(entity):
-                    entity.damage(1)
-                    settings.SOUNDS["hit-enemy"].play()
-                    projectile.dead = True
+                if self.player.health == 0:
+                    self.on_game_over()
+
+            if not getattr(projectile, "damages_player", False):
+                for entity in self.entities:
+                    if projectile.dead:
+                        break
+
+                    if not entity.dead and projectile.collides(entity):
+                        entity.damage(1, source="arrow")
+                        settings.SOUNDS["hit-enemy"].play()
+                        projectile.dead = True
 
             if projectile.dead:
                 self.projectiles.remove(projectile)
@@ -248,6 +273,18 @@ class Room:
                 self.objects.remove(obj)
                 player.change_state("pot-lift", pot=obj)
                 return
+
+    def _generate_doorways(self) -> List[Doorway]:
+        return [
+            Doorway("top", False, self),
+            Doorway("bottom", False, self),
+            Doorway("left", False, self),
+            Doorway("right", False, self),
+        ]
+
+    def try_open_chest(self, player: TypeVar("Player")) -> None:
+        if self.chest is not None and not self.chest.opened and player.collides(self.chest):
+            self.chest.open(player)
 
     def _generate_walls_and_floors(self) -> None:
         """
@@ -350,6 +387,21 @@ class Room:
                         GameObject(GAME_OBJECT_DEFS["pot"], x * 16, y * 16)
                     )
 
+        if self.spawn_chest:
+            self.chest = Chest(
+                random.randint(
+                    settings.MAP_RENDER_OFFSET_X + settings.TILE_SIZE,
+                    settings.VIRTUAL_WIDTH - settings.TILE_SIZE * 2 - 16,
+                ),
+                random.randint(
+                    settings.MAP_RENDER_OFFSET_Y + settings.TILE_SIZE,
+                    settings.MAP_HEIGHT * settings.TILE_SIZE
+                    + settings.MAP_RENDER_OFFSET_Y
+                    - settings.TILE_SIZE
+                    - 16,
+                ),
+            )
+
     def render(
         self,
         surface: pygame.Surface,
@@ -376,6 +428,9 @@ class Room:
 
         for obj in self.objects:
             obj.render(surface, offset_x, offset_y)
+
+        if self.chest is not None:
+            self.chest.render(surface, offset_x, offset_y)
 
         for entity in self.entities:
             if not entity.dead:

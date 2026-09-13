@@ -14,6 +14,7 @@ from gale.command import CommandBindings
 from gale.input_handler import InputData
 
 from src.commands import (
+    FIRE,
     INTERACT,
     MOVE_DOWN,
     MOVE_LEFT,
@@ -37,6 +38,12 @@ class Player(Entity):
         # the same way jump_requested works in 05-super_martian.
         self.sword_requested = False
         self.interact_requested = False
+        self.fire_requested = False
+
+        # Set by Chest.open() the first time the player opens the chest;
+        # None until then, so `player.bow is not None` doubles as "has the
+        # bow been obtained yet?" everywhere it's checked.
+        self.bow = None
 
         self.command_bindings = CommandBindings()
         self.command_bindings.bind("move_left", press=MOVE_LEFT, release=STOP_MOVE_LEFT)
@@ -47,6 +54,7 @@ class Player(Entity):
         self.command_bindings.bind("move_down", press=MOVE_DOWN, release=STOP_MOVE_DOWN)
         self.command_bindings.bind("sword", press=SWORD)
         self.command_bindings.bind("enter", press=INTERACT)
+        self.command_bindings.bind("fire", press=FIRE)
 
     def collides(self, target: Any) -> bool:
         """

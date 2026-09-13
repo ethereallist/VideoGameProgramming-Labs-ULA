@@ -72,7 +72,10 @@ class PlayerSwingSwordState(BaseEntityState):
 
         for entity in self.dungeon.current_room.entities:
             if entity.collides(self.sword_hitbox):
-                entity.damage(1)
+                if getattr(entity, "sword_immune", False):
+                    continue
+
+                entity.damage(1, source="sword")
                 settings.SOUNDS["hit-enemy"].play()
 
         if self.entity.current_animation.times_played > 0:

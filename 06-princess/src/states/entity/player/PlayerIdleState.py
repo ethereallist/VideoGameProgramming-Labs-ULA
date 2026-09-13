@@ -39,8 +39,17 @@ class PlayerIdleState(BaseEntityState):
             self.entity.change_state("swing-sword")
             return
 
+        if self.entity.fire_requested:
+            self.entity.fire_requested = False
+
+            if self.entity.bow is not None:
+                self.dungeon.current_room.projectiles.append(
+                    self.entity.bow.fire(self.entity)
+                )
+
         if self.entity.interact_requested:
             self.entity.interact_requested = False
+            self.dungeon.current_room.try_open_chest(self.entity)
             self.dungeon.current_room.take_adjacent_pot(self.entity)
 
             if self.entity.state_machine.current is not self:

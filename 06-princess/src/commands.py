@@ -2,9 +2,6 @@
 ISPPV1 2023
 Study Case: The Legend of the Princess (ARPG)
 
-Author: Alejandro Mujica
-alejandro.j.mujic4@gmail.com
-
 This file contains the Command classes shared by the player (driven by
 InputHandler through CommandBindings) and by any AI-controlled entity
 (driven directly from its own state's process_ai). Every Command only
@@ -71,6 +68,11 @@ class InteractCommand(Command):
         receiver.interact_requested = True
 
 
+class FireCommand(Command):
+    def execute(self, receiver, dt: float = 0.0) -> None:
+        receiver.fire_requested = True
+
+
 MOVE_LEFT = MoveLeftCommand()
 MOVE_RIGHT = MoveRightCommand()
 MOVE_UP = MoveUpCommand()
@@ -81,3 +83,4 @@ STOP_MOVE_UP = StopMoveUpCommand()
 STOP_MOVE_DOWN = StopMoveDownCommand()
 SWORD = SwordCommand()
 INTERACT = InteractCommand()
+FIRE = FireCommand()

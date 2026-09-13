@@ -9,6 +9,7 @@ This file contains the class Dungeon.
 """
 
 import math
+import random
 from typing import Callable, TypeVar
 
 import pygame
@@ -16,7 +17,12 @@ import pygame
 from gale.timer import Timer
 
 import settings
+from src.world.BossRoom import BossRoom
 from src.world.Room import Room
+
+# 1-in-N chance, each time a doorway is crossed after the bow is obtained,
+# that the next room is the boss room instead of a regular one.
+_BOSS_ROOM_CHANCE = 4
 
 
 class Dungeon:
@@ -28,8 +34,12 @@ class Dungeon:
         self.player = player
         self.on_game_over = on_game_over
 
+        # The chest and the boss room each only ever appear once per game.
+        self.chest_spawned = False
+        self.boss_room_used = False
+
         # Current room we're operating in.
-        self.current_room = Room(self.player, self.on_game_over)
+        self.current_room = self._create_room()
 
         # Room we're moving the camera to during a shift; becomes the
         # active room afterwards.
@@ -40,6 +50,15 @@ class Dungeon:
         self.camera_y = 0
         self.shifting = False
 
+    def _create_room(self) -> Room:
+        spawn_chest = False
+
+        if not self.chest_spawned and random.randint(1, 3) == 1:
+            spawn_chest = True
+            self.chest_spawned = True
+
+        return Room(self.player, self.on_game_over, spawn_chest=spawn_chest)
+
     def begin_shifting(self, shift_x: float, shift_y: float) -> None:
         """
         Prepares for the camera shifting process, kicking off a tween of the
@@ -47,7 +66,27 @@ class Dungeon:
         PlayerWalkState/PlayerPotWalkState.
         """
         self.shifting = True
-        self.next_room = Room(self.player, self.on_game_over)
+
+        # The wall the player is about to appear next to in the new room is
+        # the opposite of the direction they're currently walking.
+        if shift_x < 0:
+            entrance_direction = "right"
+        elif shift_x > 0:
+            entrance_direction = "left"
+        elif shift_y < 0:
+            entrance_direction = "bottom"
+        else:
+            entrance_direction = "top"
+
+        if (
+            getattr(self.player, "bow", None) is not None
+            and not self.boss_room_used
+            and random.randint(1, _BOSS_ROOM_CHANCE) == 1
+        ):
+            self.boss_room_used = True
+            self.next_room = BossRoom(self.player, self.on_game_over, entrance_direction)
+        else:
+            self.next_room = self._create_room()
 
         # Start all doors in next room as open until we get in.
         for doorway in self.next_room.doorways:
