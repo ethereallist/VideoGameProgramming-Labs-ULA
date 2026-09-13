@@ -131,6 +131,76 @@ class Board:
         self.in_stack.remove(tile)
         return match
 
+    def swap_tiles(self, tile1: Tile, tile2: Tile) -> None:
+        self.tiles[tile1.i][tile1.j], self.tiles[tile2.i][tile2.j] = tile2, tile1
+        tile1.i, tile2.i = tile2.i, tile1.i
+        tile1.j, tile2.j = tile2.j, tile1.j
+
+    def would_match(self, tile1: Tile, tile2: Tile) -> bool:
+        self.swap_tiles(tile1, tile2)
+        matches = self.calculate_matches_for([tile1, tile2])
+        self.matches = []
+        self.swap_tiles(tile1, tile2)
+        return matches is not None
+
+    def has_valid_moves(self) -> bool:
+        for i in range(settings.BOARD_HEIGHT):
+            for j in range(settings.BOARD_WIDTH):
+                tile = self.tiles[i][j]
+
+                if j + 1 < settings.BOARD_WIDTH and self.would_match(
+                    tile, self.tiles[i][j + 1]
+                ):
+                    return True
+
+                if i + 1 < settings.BOARD_HEIGHT and self.would_match(
+                    tile, self.tiles[i + 1][j]
+                ):
+                    return True
+
+        return False
+
+    def reshuffle(self) -> None:
+        self._initialize_tiles()
+
+    def detonate_line(self, tile: Tile) -> List[Tile]:
+        """
+        Clears tile's entire row and column (tile included). Returns every
+        tile actually removed, so the caller can score them.
+        """
+        removed: List[Tile] = []
+
+        for j in range(settings.BOARD_WIDTH):
+            t = self.tiles[tile.i][j]
+            if t is not None:
+                removed.append(t)
+                self.tiles[tile.i][j] = None
+
+        for i in range(settings.BOARD_HEIGHT):
+            t = self.tiles[i][tile.j]
+            if t is not None:
+                removed.append(t)
+                self.tiles[i][tile.j] = None
+
+        return removed
+
+    def detonate_color(self, tile: Tile) -> List[Tile]:
+        """
+        Clears every tile on the board sharing tile's color. Returns every
+        tile actually removed, so the caller can score them.
+        """
+        removed: List[Tile] = []
+        color = tile.color
+
+        for i in range(settings.BOARD_HEIGHT):
+            for j in range(settings.BOARD_WIDTH):
+                t = self.tiles[i][j]
+                if t is not None and t.color == color:
+                    removed.append(t)
+                    self.tiles[i][j] = None
+
+        return removed
+
     def calculate_matches_for(
         self, new_tiles: List[Tile]
     ) -> Optional[List[List[Tile]]]:

@@ -21,6 +21,7 @@ class Tile:
         self.y = self.i * settings.TILE_SIZE
         self.color = color
         self.variety = variety
+        self.power_up = None
         self.alpha_surface = pygame.Surface(
             (settings.TILE_SIZE, settings.TILE_SIZE), pygame.SRCALPHA
         )
@@ -43,3 +44,13 @@ class Tile:
             (self.x + offset_x, self.y + offset_y),
             settings.FRAMES["tiles"][self.color][self.variety],
         )
+
+        if self.power_up is not None:
+            center = (
+                self.x + offset_x + settings.TILE_SIZE // 2,
+                self.y + offset_y + settings.TILE_SIZE // 2,
+            )
+            ring_color = (255, 255, 255) if self.power_up == "line" else (255, 215, 0)
+            pygame.draw.circle(
+                surface, ring_color, center, settings.TILE_SIZE // 2 - 3, 3
+            )
