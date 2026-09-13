@@ -134,6 +134,7 @@ class PlayState(BaseState):
         if next_level > settings.NUM_LEVELS:
             self.state_machine.change("game_over", self.player, victory=True)
         else:
+            self.player.score = 0
             self.state_machine.change("play", level=next_level, player=self.player)
 
     def update(self, dt: float) -> None:
